@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bayana certificate · demo</title>
+    <style>
+      body { margin: 24px; font-family: system-ui, sans-serif; background: #f9fafa; color: #2c3237; }
+      form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+      input { padding: 8px 10px; border: 1px solid #e1e5ea; border-radius: 8px; font: inherit; }
+      button { padding: 8px 14px; border: 0; border-radius: 999px; background: #2ea1fe; color: #fff; font: inherit; cursor: pointer; }
+      canvas { display: block; width: 100%; max-width: 1123px; height: auto; border-radius: 4px; box-shadow: 0 12px 32px -8px rgba(32, 8, 58, 0.18); }
+    </style>
+  </head>
+  <body>
+    <form id="form">
+      <input name="name" placeholder="Name" />
+      <input name="skill" placeholder="Skill" />
+      <input name="event" placeholder="Event" />
+      <input name="date" placeholder="Event date" />
+      <input name="dateIssued" placeholder="Date issued" />
+      <button>Render</button>
+      <button type="button" id="download">Download PNG</button>
+    </form>
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+      import { loadFonts, renderCertificate } from './render.js'
+
+      const spec = await (await fetch('./template.json')).json()
+      await loadFonts(spec)
+      const background = new Image()
+      background.src = spec.background
+      await background.decode()
+
+      const scale = 3 // print resolution; use 1–2 for screens
+      const canvas = document.getElementById('canvas')
+      canvas.width = spec.width * scale
+      canvas.height = spec.height * scale
+      const form = document.getElementById('form')
+
+      function render() {
+        const data = Object.fromEntries([...new FormData(form)].filter(([, v]) => v))
+        const ctx = canvas.getContext('2d')
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        renderCertificate(ctx, spec, data, { background, scale })
+      }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault()
+        render()
+      })
+      document.getElementById('download').addEventListener('click', () => {
+        const a = document.createElement('a')
+        a.href = canvas.toDataURL('image/png')
+        a.download = 'certificate.png'
+        a.click()
+      })
+      render()
+    </script>
+  </body>
+</html>
